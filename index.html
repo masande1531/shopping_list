@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/@mdi/font@4.x/css/materialdesignicons.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@10.13.0/dist/sweetalert2.min.css" />
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui" />
+</head>
+
+<body>
+    <div id="app">
+        <v-app>
+            <v-main>
+                <v-card class="mx-auto mt-5" max-width="1200">
+                    <div class="font-weight-medium">
+                        <h1>Shopping List</h1>
+                        <br />
+                    </div>
+
+                    <v-btn rounded color="green acent-2" @click="formDisplay()">Add new</v-btn>
+                    <div>&nbsp;</div>
+                    <v-simple-table>
+                        <template v-slot:default>
+                            <thead>
+                                <tr class="light-blue darken-2">
+                                    <th class="white--text">ID</th>
+                                    <th class="white--text">Shopping List</th>
+                                    <th class="white--text">Checked</th>
+                                    <th class="white--text">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+
+                                <tr v-for="shopping in shoppings" :key="shopping.id">
+                                    <td>{{ shopping.id }}</td>
+                                    <td>{{ shopping.item }}</td>
+                                    <td>
+                                        <v-checkbox v-model="ex4" label="" color="success" value="Checked" hide-details>
+                                        </v-checkbox>
+                                    </td>
+                                    <td>
+
+                                        <v-btn class="teal accent-4 " dark
+                                            @click="formEdit(shopping.id, shopping.item)">Edit</v-btn>
+                                        <v-btn class="error" dark @click="delete(shopping.id)">Delete</v-btn>
+
+                                    </td>
+
+                                </tr>
+                            </tbody>
+                        </template>
+                    </v-simple-table>
+
+                    <v-dialog v-model="dialog" max-width="500">
+                        <v-card>
+                            <v-card-title class="blue-grey darken-1 white--center">Add new shopping item </v-card-title>
+                            <v-card-text>
+                                <v-form>
+                                   
+                                    <v-container>
+                                        <v-row>
+                                            <input v-model="shopping.id" hidden></input>
+                                            <v-col cols="12" md="16">
+                                               
+                                                <v-text-field v-model="shopping.item" label="Shopping item" solo
+                                                    required></v-text-field>
+                                            </v-col>
+
+                                        </v-row>
+                                    </v-container>
+                                    <v-card-actions>
+                                        <v-spacer></v-spacer>
+                                        <v-btn @click="dialog=false">Cancel</v-btn>
+                                        <v-btn @click="saveFom()" type="submit" color="indigo" dark>save</v-btn>
+                                    </v-card-actions>
+                                </v-form>
+                            </v-card-text>
+
+                        </v-card>
+                    </v-dialog>
+                </v-card>
+            </v-main>
+        </v-app>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.x/dist/vue.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10.13.0/dist/sweetalert2.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.20.0/axios.min.js"
+        integrity="sha512-quHCp3WbBNkwLfYUMd+KwBAgpVukJu5MncuQaWXgCrfgcxCJAq/fo+oqrRKOj+UKEmyMCG3tb8RB63W+EmrOBg=="
+        crossorigin="anonymous"></script>
+    <script>
+        var url = "http://localhost/shopping_items/backend/crud.php";
+        new Vue({
+            el: "#app",
+            vuetify: new Vuetify(),
+            data() {
+                return {
+                   shoppings: [],
+                    dialog: false,
+                    operation: '',
+                   shopping: {
+                        id: null,
+                        item: '',                   
+                    }
+                }
+            },
+           
+            created() {
+                this.show()
+            },
+            methods: {
+               
+                show: function () {
+                    axios.post(url, { option: 1 })
+                        .then(response => {
+                            this.shopping = response.data;
+                            console.log(response.data);
+                        })
+                },
+                
+                create: function () {
+                    axios.post(url, { option: 2, item: this.shopping.item })
+                        .then(response => {
+                            this.show();
+                        });
+                    
+                    this.shopping.item = "";
+                },
+                edit: function (id, item) {
+                    axios.post(url, { option: 3, id: this.shopping.id,  item: this.shopping.item })
+                        .then(response => {
+                            this.show();
+                        });
+
+                },
+              
+                delete: function (id) {
+                    Swal.fire({
+                        title: 'Do you confirm deleting shopping item?',
+                        confirmButtonText: `Confirm`,
+                        showCancelButton: true,
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            axios.post(url, { option: 4, id: id }).then(response => {
+                                this.show();
+                            });
+                            Swal.fire('Removed!', '', 'success')
+                        } else if (result.isDenied) {
+                        }
+                    });
+
+                },
+             
+                saveFom: function () {
+                    if (this.operation == 'create') {
+                        this.create();
+
+                    }
+                    if (this.operation == 'edit') {
+                        this.edit();
+                    }
+                   
+                    this.dialog = false;
+                },
+                formDisplay: function () {
+                    this.dialog = true;
+                    this.operation = "create";
+
+                    this.shopping.item = "";
+                },
+                formEdit: function (id, item) {
+                    this.shopping.id = id;
+                    this.shopping.item = item;
+                    this.dialog = true;
+                    this.operation = 'edit';
+                }
+
+
+            }
+
+        });
+    </script>
+</body>
+
+</html>
